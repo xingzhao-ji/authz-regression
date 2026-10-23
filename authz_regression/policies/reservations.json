@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "name": "reservation-permissions",
+  "base_url": "http://127.0.0.1:8765",
+  "timeout_seconds": 2,
+  "max_duration_seconds": 30,
+  "actors": {
+    "anonymous": {"headers": {}},
+    "a-owner": {"headers": {"Authorization": {"env": "DEMO_A_OWNER", "prefix": "Bearer "}}},
+    "a-peer": {"headers": {"Authorization": {"env": "DEMO_A_PEER", "prefix": "Bearer "}}},
+    "a-admin": {"headers": {"Authorization": {"env": "DEMO_A_ADMIN", "prefix": "Bearer "}}},
+    "b-owner": {"headers": {"Authorization": {"env": "DEMO_B_OWNER", "prefix": "Bearer "}}}
+  },
+  "resources": {"own": "r-a", "peer": "r-peer", "other": "r-b"},
+  "cases": [
+    {"id": "anonymous-denied", "actor": "anonymous", "method": "GET", "path": "/reservations/{own}", "status": 401,
+     "assertions": [{"pointer": "/resource", "op": "absent"}]},
+    {"id": "owner-read", "actor": "a-owner", "method": "GET", "path": "/reservations/{own}", "status": 200,
+     "assertions": [{"pointer": "/resource/id", "op": "equals", "value": "r-a"}, {"pointer": "/resource/owner", "op": "equals", "value": "alice"}]},
+    {"id": "same-tenant-read", "actor": "a-peer", "method": "GET", "path": "/reservations/{own}", "status": 200,
+     "assertions": [{"pointer": "/resource/tenant", "op": "equals", "value": "A"}]},
+    {"id": "cross-tenant-read", "actor": "a-owner", "method": "GET", "path": "/reservations/{other}", "status": 403,
+     "assertions": [{"pointer": "/resource", "op": "absent"}, {"pointer": "/error", "op": "equals", "value": "forbidden"}]},
+    {"id": "tenant-list", "actor": "a-owner", "method": "GET", "path": "/reservations", "status": 200,
+     "assertions": [{"pointer": "/items", "op": "length", "value": 2}, {"pointer": "/items/*/tenant", "op": "all_equals", "value": "A"}]},
+    {"id": "owner-cancel", "actor": "a-owner", "method": "POST", "path": "/reservations/{own}/cancel", "status": 200,
+     "assertions": [{"pointer": "/resource/state", "op": "equals", "value": "cancelled"}, {"pointer": "/resource/version", "op": "equals", "value": 1}]},
+    {"id": "admin-same-tenant-cancel", "actor": "a-admin", "method": "POST", "path": "/reservations/{peer}/cancel", "status": 200,
+     "assertions": [{"pointer": "/resource/state", "op": "equals", "value": "cancelled"}]},
+    {"id": "cross-tenant-write", "actor": "a-owner", "method": "POST", "path": "/reservations/{other}/cancel", "status": 403,
+     "assertions": [{"pointer": "/resource", "op": "absent"}],
+     "unchanged": {"actor": "b-owner", "path": "/reservations/{other}", "pointer": "/resource", "status": 200}},
+    {"id": "peer-write-denied", "actor": "a-peer", "method": "POST", "path": "/reservations/{own}/cancel", "status": 403,
+     "assertions": [{"pointer": "/resource", "op": "absent"}],
+     "unchanged": {"actor": "a-owner", "path": "/reservations/{own}", "pointer": "/resource", "status": 200}},
+    {"id": "admin-cross-tenant-write", "actor": "a-admin", "method": "POST", "path": "/reservations/{other}/cancel", "status": 403,
+     "assertions": [{"pointer": "/resource", "op": "absent"}],
+     "unchanged": {"actor": "b-owner", "path": "/reservations/{other}", "pointer": "/resource", "status": 200}}
+  ]
+}

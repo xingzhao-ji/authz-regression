@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools==84.0.0", "wheel==0.48.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "authz-regression"
+version = "0.1.0"
+description = "HTTP permission contracts that check data scope and denied-write side effects"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{name = "Xingzhao Ji"}]
+dependencies = []
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Testing",
+]
+
+[project.scripts]
+authz-regression = "authz_regression.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["authz_regression*"]
+
+[tool.setuptools.package-data]
+authz_regression = ["policies/*.json"]
