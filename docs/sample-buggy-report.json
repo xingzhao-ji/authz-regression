@@ -1,0 +1,257 @@
+{
+  "cases": [
+    {
+      "actor": "anonymous",
+      "checks": [
+        {
+          "actual": 401,
+          "code": "status",
+          "expected": 401,
+          "passed": true
+        },
+        {
+          "code": "assertion_passed",
+          "index": 1,
+          "op": "absent",
+          "passed": true
+        }
+      ],
+      "id": "anonymous-denied",
+      "method": "GET",
+      "passed": true,
+      "status": 401
+    },
+    {
+      "actor": "a-owner",
+      "checks": [
+        {
+          "actual": 200,
+          "code": "status",
+          "expected": 200,
+          "passed": true
+        },
+        {
+          "code": "assertion_passed",
+          "index": 1,
+          "op": "equals",
+          "passed": true
+        },
+        {
+          "code": "assertion_passed",
+          "index": 2,
+          "op": "equals",
+          "passed": true
+        }
+      ],
+      "id": "owner-read",
+      "method": "GET",
+      "passed": true,
+      "status": 200
+    },
+    {
+      "actor": "a-peer",
+      "checks": [
+        {
+          "actual": 200,
+          "code": "status",
+          "expected": 200,
+          "passed": true
+        },
+        {
+          "code": "assertion_passed",
+          "index": 1,
+          "op": "equals",
+          "passed": true
+        }
+      ],
+      "id": "same-tenant-read",
+      "method": "GET",
+      "passed": true,
+      "status": 200
+    },
+    {
+      "actor": "a-owner",
+      "checks": [
+        {
+          "actual": 403,
+          "code": "status",
+          "expected": 403,
+          "passed": true
+        },
+        {
+          "code": "assertion_failed",
+          "index": 1,
+          "op": "absent",
+          "passed": false
+        },
+        {
+          "code": "assertion_passed",
+          "index": 2,
+          "op": "equals",
+          "passed": true
+        }
+      ],
+      "id": "cross-tenant-read",
+      "method": "GET",
+      "passed": false,
+      "status": 403
+    },
+    {
+      "actor": "a-owner",
+      "checks": [
+        {
+          "actual": 200,
+          "code": "status",
+          "expected": 200,
+          "passed": true
+        },
+        {
+          "code": "assertion_failed",
+          "index": 1,
+          "op": "length",
+          "passed": false
+        },
+        {
+          "code": "assertion_failed",
+          "index": 2,
+          "op": "all_equals",
+          "passed": false
+        }
+      ],
+      "id": "tenant-list",
+      "method": "GET",
+      "passed": false,
+      "status": 200
+    },
+    {
+      "actor": "a-owner",
+      "checks": [
+        {
+          "actual": 200,
+          "code": "status",
+          "expected": 200,
+          "passed": true
+        },
+        {
+          "code": "assertion_passed",
+          "index": 1,
+          "op": "equals",
+          "passed": true
+        },
+        {
+          "code": "assertion_passed",
+          "index": 2,
+          "op": "equals",
+          "passed": true
+        }
+      ],
+      "id": "owner-cancel",
+      "method": "POST",
+      "passed": true,
+      "status": 200
+    },
+    {
+      "actor": "a-admin",
+      "checks": [
+        {
+          "actual": 200,
+          "code": "status",
+          "expected": 200,
+          "passed": true
+        },
+        {
+          "code": "assertion_passed",
+          "index": 1,
+          "op": "equals",
+          "passed": true
+        }
+      ],
+      "id": "admin-same-tenant-cancel",
+      "method": "POST",
+      "passed": true,
+      "status": 200
+    },
+    {
+      "actor": "a-owner",
+      "checks": [
+        {
+          "actual": 403,
+          "code": "status",
+          "expected": 403,
+          "passed": true
+        },
+        {
+          "code": "assertion_passed",
+          "index": 1,
+          "op": "absent",
+          "passed": true
+        },
+        {
+          "code": "state_changed",
+          "passed": false
+        }
+      ],
+      "id": "cross-tenant-write",
+      "method": "POST",
+      "passed": false,
+      "status": 403
+    },
+    {
+      "actor": "a-peer",
+      "checks": [
+        {
+          "actual": 403,
+          "code": "status",
+          "expected": 403,
+          "passed": true
+        },
+        {
+          "code": "assertion_passed",
+          "index": 1,
+          "op": "absent",
+          "passed": true
+        },
+        {
+          "code": "state_changed",
+          "passed": false
+        }
+      ],
+      "id": "peer-write-denied",
+      "method": "POST",
+      "passed": false,
+      "status": 403
+    },
+    {
+      "actor": "a-admin",
+      "checks": [
+        {
+          "actual": 403,
+          "code": "status",
+          "expected": 403,
+          "passed": true
+        },
+        {
+          "code": "assertion_passed",
+          "index": 1,
+          "op": "absent",
+          "passed": true
+        },
+        {
+          "code": "state_changed",
+          "passed": false
+        }
+      ],
+      "id": "admin-cross-tenant-write",
+      "method": "POST",
+      "passed": false,
+      "status": 403
+    }
+  ],
+  "passed": false,
+  "schema_version": 1,
+  "suite": "reservation-permissions",
+  "summary": {
+    "failed": 5,
+    "passed": 5
+  }
+}

@@ -1,0 +1,28 @@
+name: contracts
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.12', '3.13']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run real HTTP and CLI tests
+        run: python -m unittest discover -v
+      - name: Build wheel with pinned tools
+        run: |
+          python -m pip install -r requirements-build.txt
+          python -m pip wheel . --no-build-isolation --no-deps --wheel-dir dist
+      - name: Install the built package
+        run: python -m pip install --no-index --find-links dist authz-regression
+      - name: Exercise installed entrypoint and packaged policy
+        working-directory: ${{ runner.temp }}
+        run: authz-regression demo --adapter annotations
