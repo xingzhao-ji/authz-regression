@@ -55,7 +55,7 @@ def _write(path, text):
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = None
     try:
-        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=destination.parent,
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", newline="\n", dir=destination.parent,
                                          prefix=".authz-report-", delete=False) as output:
             temporary = output.name
             output.write(text)
@@ -66,6 +66,11 @@ def _write(path, text):
 
 
 def main(argv=None):
+    # Pipes use locale-dependent defaults on Windows. Reports use one explicit
+    # encoding/newline contract whether written to a file or standard output.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="strict", newline="\n")
     args = _parser().parse_args(argv)
     try:
         if args.command == "validate":

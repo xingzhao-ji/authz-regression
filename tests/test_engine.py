@@ -187,6 +187,22 @@ class HTTPTests(unittest.TestCase):
             self.assertNotIn("Authorization", output)
             self.assertIn("FAIL", output)
 
+    def test_redaction_preserves_report_enums_and_censors_only_user_labels(self):
+        with server() as (url, _):
+            for secret in ("status", "GET", "equals", "a"):
+                with self.subTest(secret=secret):
+                    data = policy(url)
+                    data["name"] = secret + "-suite"
+                    data["cases"][0]["id"] = secret + "-run"
+                    report = run_policy(data, environ={"TEST_TOKEN": secret})
+                    self.assertEqual(report["suite"], "[REDACTED]-suite")
+                    self.assertEqual(report["cases"][0]["id"], "[REDACTED]-run")
+                    self.assertEqual(report["cases"][0]["method"], "GET")
+                    self.assertEqual(report["cases"][0]["checks"][0]["code"], "status")
+                    self.assertEqual(report["cases"][0]["checks"][1]["code"], "assertion_passed")
+                    self.assertEqual(report["cases"][0]["checks"][1]["op"], "equals")
+                    self.assertTrue(report["passed"])
+
     def test_redirects_are_never_followed(self):
         with server() as (url, state):
             data = policy(url)

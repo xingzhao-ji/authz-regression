@@ -30,7 +30,7 @@ def sample_policy(adapter, base_url):
     if adapter not in ("reservations", "annotations"):
         raise PolicyError("Unknown demo adapter.")
     path = files("authz_regression").joinpath("policies", adapter + ".json")
-    policy = json.loads(path.read_text())
+    policy = json.loads(path.read_text(encoding="utf-8"))
     policy["base_url"] = base_url
     return policy
 

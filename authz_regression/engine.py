@@ -48,9 +48,12 @@ def _bounded_json(value):
         _require(count <= 50_000 and depth <= 20, "JSON structure exceeds limits.")
         if isinstance(item, dict):
             _require(all(isinstance(k, str) for k in item), "JSON keys must be strings.")
+            stack.extend((key, depth + 1) for key in item)
             stack.extend((v, depth + 1) for v in item.values())
         elif isinstance(item, list):
             stack.extend((v, depth + 1) for v in item)
+        elif isinstance(item, str):
+            _require(not any("\ud800" <= char <= "\udfff" for char in item), "JSON strings must contain valid Unicode scalar values.")
         elif isinstance(item, float):
             _require(math.isfinite(item), "Non-finite numbers are not supported.")
         else:
@@ -330,16 +333,14 @@ def _check(code, passed, **extra):
     return {"code": code, "passed": bool(passed), **extra}
 
 
-def _redact(value, secrets):
-    if isinstance(value, str):
-        for secret in sorted(set(secrets), key=len, reverse=True):
-            value = value.replace(secret, "[REDACTED]")
+def _redact_label(value, secrets):
+    # Only policy-controlled labels can carry secret-derived text. Fixed
+    # schema fields/enums must not change when a token happens to be "status".
+    candidates = sorted({secret for secret in secrets if secret in value}, key=len, reverse=True)
+    if not candidates:
         return value
-    if isinstance(value, list):
-        return [_redact(item, secrets) for item in value]
-    if isinstance(value, dict):
-        return {key: _redact(item, secrets) for key, item in value.items()}
-    return value
+    # One pass prevents a short token from matching the replacement marker.
+    return re.sub("|".join(re.escape(secret) for secret in candidates), "[REDACTED]", value)
 
 
 def run_policy(document, *, environ=None, allow_origins=()):
@@ -407,7 +408,11 @@ def run_policy(document, *, environ=None, allow_origins=()):
     passed_count = sum(row["passed"] for row in results)
     report = {"schema_version": 1, "suite": policy["name"], "passed": passed_count == len(results),
               "summary": {"passed": passed_count, "failed": len(results) - passed_count}, "cases": results}
-    return _redact(report, secrets)
+    report["suite"] = _redact_label(report["suite"], secrets)
+    for row in results:
+        row["id"] = _redact_label(row["id"], secrets)
+        row["actor"] = _redact_label(row["actor"], secrets)
+    return report
 
 
 def render_markdown(report):

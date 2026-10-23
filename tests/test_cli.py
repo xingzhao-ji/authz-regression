@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def cli(*args, env=None):
     return subprocess.run([sys.executable, "-m", "authz_regression", *args], cwd=ROOT,
-                          env=env, capture_output=True, text=True, timeout=15)
+                          env=env, capture_output=True, text=True, encoding="utf-8", timeout=15)
 
 
 class CLITests(unittest.TestCase):
@@ -25,10 +25,23 @@ class CLITests(unittest.TestCase):
             result = cli("demo", "--adapter", "annotations", "--json", str(json_path), "--markdown", str(md_path))
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertTrue(json_path.exists(), "JSON report was not written")
-            report = json.loads(json_path.read_text())
+            report = json.loads(json_path.read_text(encoding="utf-8"))
             self.assertEqual(report["summary"], {"passed": 11, "failed": 0})
-            self.assertEqual(result.stdout, md_path.read_text())
+            self.assertEqual(result.stdout, md_path.read_text(encoding="utf-8"))
             self.assertIn("11 passed, 0 failed", result.stdout)
+
+    def test_report_pipe_is_utf8_even_with_legacy_process_encoding(self):
+        for encoding in ("ascii", "cp1252"):
+            with self.subTest(encoding=encoding), tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "report.md"
+                result = subprocess.run(
+                    [sys.executable, "-m", "authz_regression", "demo", "--markdown", str(path)],
+                    cwd=ROOT, env={**os.environ, "PYTHONIOENCODING": encoding, "PYTHONUTF8": "0"},
+                    capture_output=True, timeout=15,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, path.read_bytes())
+                self.assertIn("**PASS** — 10 passed", result.stdout.decode("utf-8"))
 
     def test_buggy_demo_returns_nonzero_with_semantic_evidence(self):
         result = cli("demo", "--mode", "buggy")
@@ -55,6 +68,18 @@ class CLITests(unittest.TestCase):
             self.assertEqual(result.returncode, 2)
             self.assertNotIn("sensitive-policy-secret", result.stdout + result.stderr)
             self.assertNotIn("Traceback", result.stderr)
+
+    def test_unpaired_unicode_surrogate_is_a_policy_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "policy.json"
+            data = sample_policy("reservations", "http://127.0.0.1:1")
+            data["resources"]["own"] = "\ud800"
+            path.write_text(json.dumps(data), encoding="utf-8")
+            result = cli("validate", str(path))
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("Policy error:", result.stderr)
+            self.assertNotIn("Traceback", result.stderr)
+            self.assertNotIn("UnicodeEncodeError", result.stderr)
 
     def test_validation_does_not_require_tokens_or_send_http(self):
         result = cli("validate", "authz_regression/policies/reservations.json", env={"PATH": os.environ.get("PATH", "")})

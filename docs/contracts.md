@@ -1,6 +1,6 @@
 # Contract reference (version 1)
 
-A policy is one JSON object. Unknown fields, duplicate object keys, invalid identifiers and unrecognized assertions are errors before network activity. The complete examples are in `authz_regression/policies/`.
+A policy is one JSON object. Unknown fields, duplicate object keys, invalid identifiers, unpaired Unicode surrogates and unrecognized assertions are errors before network activity. The complete examples are in `authz_regression/policies/`.
 
 | Top-level field | Meaning |
 | --- | --- |
@@ -15,7 +15,7 @@ A policy is one JSON object. Unknown fields, duplicate object keys, invalid iden
 
 Names and case/actor/resource identifiers start with an ASCII letter or digit and use up to 80 ASCII letters, digits, underscores, periods or hyphens. JSON nesting is bounded at 20 levels; policies and responses are bounded at 1 MiB. No dynamic expressions, scripts, regular expressions or plugins execute from a policy.
 
-Each actor header has `{"env": "VARIABLE_NAME", "prefix": "Bearer "}`. `prefix` is optional. Missing/empty variables, control characters, duplicate case-insensitive header names and reserved transport headers fail preflight. Tokens are never included in reports.
+Each actor header has `{"env": "VARIABLE_NAME", "prefix": "Bearer "}`. `prefix` is optional. Missing/empty variables, control characters, duplicate case-insensitive header names and reserved transport headers fail preflight. Credential values are never copied to reports. Known credential strings are additionally removed from policy-controlled report labels; fixed public schema names/enums are preserved even if a token happens to have the same spelling.
 
 ## Cases
 
@@ -61,6 +61,6 @@ The runner performs a before-probe, the target request, and an after-probe. A fa
 
 JSON reports have `schema_version`, `suite`, `passed`, `summary` and ordered `cases`. Each case includes its id, actor label, method, observed status, boolean outcome and checks. Checks report fixed reason codes, status integers and assertion indexes/operators; they contain no values, paths, response excerpts or exception text. Schema version is independently versioned from the policy.
 
-Markdown is derived from this report. Reports are atomically replaced individually; writing two output files is not a multi-file transaction. The CLI refuses output paths that overwrite the input policy or collide with each other.
+Markdown is derived from this report. CLI streams and output files use UTF-8 with LF newlines, independent of the platform's locale/default pipe encoding. When capturing output in Python, specify `encoding="utf-8"`; read report files with `encoding="utf-8"`. Reports are atomically replaced individually; writing two output files is not a multi-file transaction. The CLI refuses output paths that overwrite the input policy or collide with each other.
 
 The allowlist is an exact `(scheme, hostname, port)` match supplied via `--allow-origin`; it cannot be embedded in the policy to grant itself permission. It does not accept wildcards or redirects. `localhost` is pinned to IPv4 loopback; other default-allowed targets must be literal loopback addresses. Explicitly allowed DNS hostnames use OS resolution at connection time, so allowlisting expresses operator intent, not a defense against a compromised DNS service. Proxy environment variables are ignored.

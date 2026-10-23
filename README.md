@@ -65,7 +65,7 @@ python3 -m authz_regression validate authz_regression/policies/reservations.json
 python3 -m authz_regression run my-contract.json --json reports/run.json --markdown reports/run.md
 ```
 
-`validate` performs no network requests and requires no credentials. `run` validates the entire policy and resolves **all** environment references before sending the first request. Reports are deterministic for identical observed outcomes: no timestamps, durations, generated ports, bodies or credentials.
+`validate` performs no network requests and requires no credentials. `run` validates the entire policy and resolves **all** environment references before sending the first request. Reports are deterministic for identical observed outcomes: no timestamps, durations, generated ports, bodies or credential header values. CLI output and report files use **UTF-8 with LF newlines**, including when output is piped on Windows.
 
 Only literal loopback addresses and `localhost` are allowed by default. An external test environment requires an exact origin opt-in:
 
@@ -142,5 +142,5 @@ In the second terminal, run a packaged policy with `run`. Restart the server bet
 - A state probe checks a single JSON subtree with exact comparison. Choose a stable, authoritative subtree. There is no automatic database rollback or cleanup of target fixtures.
 - Responses are buffered up to 1 MiB; request bodies up to 64 KiB. Per-request network deadlines include headers and bodies, including slow trickles; OS DNS resolution for explicitly allowed hostnames is not interruptible by Python's socket timeout. The default loopback demo performs no DNS lookup.
 - TLS certificate verification uses Python's default trust settings. Remote HTTP can be explicitly allowed, but use HTTPS for real credentials. Redirects always fail, even to the same origin.
-- Reports omit bodies and values entirely rather than guessing which fields are sensitive. Known actor token strings are also removed from report labels. The original policy and target application logs remain your responsibility.
+- Reports omit bodies and values entirely rather than guessing which fields are sensitive. Known actor token strings are also removed from user-supplied report labels. Fixed schema names, reason codes, methods and operators remain stable even if a short token coincidentally matches one of them. The original policy and target application logs remain your responsibility.
 - This implementation was developed with AI assistance. The included defect injections and executable tests make its claimed behavior reviewable.
